@@ -1,4 +1,4 @@
-package prodeu1
+package main
 
 import (
 	. "github.com/kimerize/kimerize/example/base/cert-manager"
