@@ -7,11 +7,11 @@ import (
 )
 
 type MyTeamConfig struct {
-	Team string
+	Team        string
+	CertManager ResourceGroup[CertManagerConfig]
 }
 
 var MyTeam = ResourceGroup[MyTeamConfig]{
-	Resources: []Generator{CertManager},
 	Transform: func(items []unstructured.Unstructured, config MyTeamConfig) []unstructured.Unstructured {
 		for _, i := range items {
 			ls := i.GetLabels()
@@ -22,5 +22,9 @@ var MyTeam = ResourceGroup[MyTeamConfig]{
 			i.SetLabels(ls)
 		}
 		return items
+	},
+	Config: MyTeamConfig{
+		Team:        "my-team",
+		CertManager: CertManager,
 	},
 }

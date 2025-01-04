@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"fmt"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -13,7 +13,6 @@ type Generator interface {
 }
 
 type ResourceGroup[T any] struct {
-	Resources []Generator
 	Transform[T]
 	Config T
 }
@@ -21,31 +20,27 @@ type ResourceGroup[T any] struct {
 var _ Generator = ResourceGroup[any]{}
 
 func (t ResourceGroup[T]) Generate() []unstructured.Unstructured {
-	items := []unstructured.Unstructured{}
-	for _, r := range t.Resources {
-		items = r.Generate()
+	v := reflect.ValueOf(t.Config)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
-	items = t.Transform(items, t.Config)
-	return items
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
+	items := []unstructured.Unstructured{}
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if g, ok := field.Interface().(Generator); ok {
+			items = append(items, g.Generate()...)
+		}
+	}
+	return t.Transform(items, t.Config)
 }
 
 func (t ResourceGroup[T]) WithOverrides(override func(*ResourceGroup[T])) ResourceGroup[T] {
 	override(&t)
 	return t
-}
-
-func MustOverride[T any, K any](rg *ResourceGroup[T], override func(*ResourceGroup[K])) {
-	found := false
-	for i, r := range rg.Resources {
-		if t, ok := r.(ResourceGroup[K]); ok {
-			found = true
-			override(&t)
-			rg.Resources[i] = t
-		}
-	}
-	if !found {
-		panic(fmt.Errorf("transformer not found"))
-	}
 }
 
 func Generate[T any](fn func(T) []unstructured.Unstructured) Transform[T] {
