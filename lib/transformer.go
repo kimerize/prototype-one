@@ -14,7 +14,7 @@ type Generator interface {
 	Generate() []unstructured.Unstructured
 }
 
-type ResourceGroup[T Transformer] struct {
+type Overlay[T Transformer] struct {
 	Config T
 }
 
@@ -24,9 +24,9 @@ func (dummyTransformer) Transform(items []unstructured.Unstructured) []unstructu
 	return items
 }
 
-var _ Generator = ResourceGroup[dummyTransformer]{}
+var _ Generator = Overlay[dummyTransformer]{}
 
-func (t ResourceGroup[T]) Generate() []unstructured.Unstructured {
+func (t Overlay[T]) Generate() []unstructured.Unstructured {
 	v := reflect.ValueOf(t.Config)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -45,7 +45,7 @@ func (t ResourceGroup[T]) Generate() []unstructured.Unstructured {
 	return t.Config.Transform(items)
 }
 
-func (t ResourceGroup[T]) WithOverrides(override func(*ResourceGroup[T])) ResourceGroup[T] {
+func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
 	override(&t)
 	return t
 }

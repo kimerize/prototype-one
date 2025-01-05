@@ -17,13 +17,13 @@ To generate the manifests, run:
 make
 ```
 
-Each package (ResourceGroup) is implemented similar to kustomize layers - it uses some resources from other layers, and runs additional transformations on top.
+Each package/Overlay is implemented similar to kustomize layers - it uses some resources from other layers, and runs additional transformations on top.
 
-Each ResourceGroup has a Config that consists of lower level resource groups, and arbitrary configuration options that are passed to transform function. Transformers/Config enable similar style of overrides as in Tanka.
+Overlay is a Generator type. Each Overlay has a Transformer that consists of lower level Generators (equivalent to layer or simple resource entry in kustomize), and arbitrary configuration options that are passed to transform function. Transformers/Config enable similar style of overrides as in Tanka.
 
-To generate resource group:
+To generate an overlay:
 
-1. Resource group finds all ResourceGroups in Config and generates them
+1. Overlay finds all Generators in the Transformer struct and generates them
 2. Runs Transform function on those resources with the Config
 
 
