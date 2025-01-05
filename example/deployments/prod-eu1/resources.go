@@ -6,27 +6,28 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type ProdConfig struct {
+type ProdTransformer struct {
 	Prod   string
-	MyTeam ResourceGroup[MyTeamConfig]
+	MyTeam ResourceGroup[MyTeamTransformer]
 }
 
-var Resources = ResourceGroup[ProdConfig]{
-	Transform: func(items []unstructured.Unstructured, config ProdConfig) []unstructured.Unstructured {
-		for _, i := range items {
-			ls := i.GetLabels()
-			if ls == nil {
-				ls = map[string]string{}
-			}
-			ls["prod"] = config.Prod
-			i.SetLabels(ls)
+func (config ProdTransformer) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
+	for _, i := range items {
+		ls := i.GetLabels()
+		if ls == nil {
+			ls = map[string]string{}
 		}
-		return items
-	},
-	Config: ProdConfig{
+		ls["prod"] = config.Prod
+		i.SetLabels(ls)
+	}
+	return items
+}
+
+var Resources = ResourceGroup[ProdTransformer]{
+	Config: ProdTransformer{
 		Prod: "prod",
-		MyTeam: MyTeam.WithOverrides(func(rg *ResourceGroup[MyTeamConfig]) {
-			rg.Config.CertManager.Config.Version = "1.6.2"
+		MyTeam: MyTeam.WithOverrides(func(rg *ResourceGroup[MyTeamTransformer]) {
+			rg.Config.CertManager.Version = "1.6.2"
 		}),
 	},
 }

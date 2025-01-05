@@ -6,25 +6,26 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type MyTeamConfig struct {
+type MyTeamTransformer struct {
 	Team        string
-	CertManager ResourceGroup[CertManagerConfig]
+	CertManager CertManagerGenerator
 }
 
-var MyTeam = ResourceGroup[MyTeamConfig]{
-	Transform: func(items []unstructured.Unstructured, config MyTeamConfig) []unstructured.Unstructured {
-		for _, i := range items {
-			ls := i.GetLabels()
-			if ls == nil {
-				ls = map[string]string{}
-			}
-			ls["team"] = "my-team"
-			i.SetLabels(ls)
+func (config MyTeamTransformer) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
+	for _, i := range items {
+		ls := i.GetLabels()
+		if ls == nil {
+			ls = map[string]string{}
 		}
-		return items
-	},
-	Config: MyTeamConfig{
+		ls["team"] = "my-team"
+		i.SetLabels(ls)
+	}
+	return items
+}
+
+var MyTeam = ResourceGroup[MyTeamTransformer]{
+	Config: MyTeamTransformer{
 		Team:        "my-team",
-		CertManager: CertManager,
+		CertManager: DefaultCertManager,
 	},
 }
