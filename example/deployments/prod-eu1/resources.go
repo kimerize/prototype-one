@@ -6,12 +6,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type PordOverlay struct {
+type ProdOverlay struct {
 	Prod   string
 	MyTeam Overlay[MyTeamOverlay]
 }
 
-func (config PordOverlay) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
+func (config ProdOverlay) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
 	for _, i := range items {
 		ls := i.GetLabels()
 		if ls == nil {
@@ -23,10 +23,10 @@ func (config PordOverlay) Transform(items []unstructured.Unstructured) []unstruc
 	return items
 }
 
-var Resources = Overlay[PordOverlay]{
-	Config: PordOverlay{
+var Resources = Overlay[ProdOverlay]{
+	Config: ProdOverlay{
 		Prod: "prod",
-		MyTeam: MyTeam.WithOverrides(func(rg *Overlay[MyTeamOverlay]) {
+		MyTeam: DefaultMyTeam.WithOverrides(func(rg *Overlay[MyTeamOverlay]) {
 			rg.Config.CertManager.Version = "1.6.2"
 		}),
 	},

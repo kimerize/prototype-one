@@ -23,7 +23,7 @@ func (config MyTeamOverlay) Transform(items []unstructured.Unstructured) []unstr
 	return items
 }
 
-var MyTeam = Overlay[MyTeamOverlay]{
+var DefaultMyTeam = Overlay[MyTeamOverlay]{
 	Config: MyTeamOverlay{
 		Team:        "my-team",
 		CertManager: DefaultCertManager,
