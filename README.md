@@ -19,9 +19,9 @@ make
 
 Each package/Overlay is implemented similar to kustomize layers - it uses some resources from other layers, and runs additional transformations on top.
 
-Overlay is a Generator type. Each Overlay has a Transformer that consists of lower level Generators (equivalent to layer or simple resource entry in kustomize), and arbitrary configuration options that are passed to transform function. Transformers/Config enable similar style of overrides as in Tanka.
+Overlay is a Generator type. Each Overlay has a Transformer that consists of lower level Generators (equivalent to layer or simple resource entry in kustomize), and arbitrary configuration options that are passed to transform function. Transformer with config enables similar style of overrides as in Tanka.
 
-To generate an overlay:
+To generate an Overlay:
 
 1. Overlay finds all Generators in the Transformer struct and generates them
 2. Runs Transform function on those resources with the Config
