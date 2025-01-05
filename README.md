@@ -9,13 +9,7 @@ Inspired by Kustomize, Tanka, CUE.
     - enables usual debugging workflows
 - Enable easy overrides for a specific configuration variant
 
-# Demo
-
-To generate the manifests, run:
-
-```shell
-make
-```
+# High level idea
 
 Each package/Overlay is implemented similar to kustomize layers - it uses some resources from other layers, and runs additional transformations on top.
 
@@ -28,6 +22,16 @@ To generate an Overlay:
 
 
 This kind of structure enables easy overrides of parameters in base layer. See [prod overrides](example/deployments/prod-eu1/resources.go) for example.
+
+## Demo
+
+`kimerize` cmd will find all `main` packages that contain a `Resoruces` symbol of `Generator` type.
+
+To generate the manifests, run:
+
+```shell
+make
+```
 
 ## Future work
 - hermetic runs
