@@ -114,12 +114,8 @@ func getGenerator(pl *plugin.Plugin) (lib.Generator, error) {
 
 func generateNodes(generator lib.Generator) ([]*yaml.RNode, error) {
 	var nodes []*yaml.RNode
-	for _, r := range generator.Generate() {
-		n, err := yaml.FromMap(r.Object)
-		if err != nil {
-			return nil, err
-		}
-		nodes = append(nodes, n)
+	for _, r := range generator.Generate().Resources() {
+		nodes = append(nodes, r.RNode.Copy())
 	}
 	return nodes, nil
 }

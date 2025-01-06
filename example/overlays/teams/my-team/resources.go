@@ -3,7 +3,7 @@ package myteam
 import (
 	. "github.com/kimerize/kimerize/example/base/cert-manager"
 	. "github.com/kimerize/kimerize/lib"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type MyTeamOverlay struct {
@@ -11,16 +11,15 @@ type MyTeamOverlay struct {
 	CertManager CertManagerGenerator
 }
 
-func (config MyTeamOverlay) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
-	for _, i := range items {
-		ls := i.GetLabels()
-		if ls == nil {
-			ls = map[string]string{}
+func (config MyTeamOverlay) Transform(rm resmap.ResMap) {
+	for _, r := range rm.Resources() {
+		labels := r.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
 		}
-		ls["team"] = "my-team"
-		i.SetLabels(ls)
+		labels["team"] = "my-team"
+		r.SetLabels(labels)
 	}
-	return items
 }
 
 var DefaultMyTeam = Overlay[MyTeamOverlay]{

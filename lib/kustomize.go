@@ -1,14 +1,14 @@
 package lib
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/api/krusty"
+	"sigs.k8s.io/kustomize/api/resmap"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) []unstructured.Unstructured {
+func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) resmap.ResMap {
 	options := krusty.MakeDefaultOptions()
 	options.PluginConfig.HelmConfig.Enabled = true
 	options.PluginConfig.HelmConfig.Command = "helm"
@@ -28,11 +28,5 @@ func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) []unst
 		// TODO:
 		// return false, err
 	}
-	result := []unstructured.Unstructured{}
-	for _, r := range m.Resources() {
-		// TODO: handle error
-		m, _ := r.Map()
-		result = append(result, unstructured.Unstructured{Object: m})
-	}
-	return result
+	return m
 }

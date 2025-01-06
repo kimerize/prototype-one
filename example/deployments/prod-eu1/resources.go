@@ -3,7 +3,7 @@ package main
 import (
 	. "github.com/kimerize/kimerize/example/overlays/teams/my-team"
 	. "github.com/kimerize/kimerize/lib"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type ProdOverlay struct {
@@ -11,16 +11,15 @@ type ProdOverlay struct {
 	MyTeam Overlay[MyTeamOverlay]
 }
 
-func (config ProdOverlay) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
-	for _, i := range items {
-		ls := i.GetLabels()
-		if ls == nil {
-			ls = map[string]string{}
+func (config ProdOverlay) Transform(rm resmap.ResMap) {
+	for _, r := range rm.Resources() {
+		labels := r.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
 		}
-		ls["prod"] = config.Prod
-		i.SetLabels(ls)
+		labels["prod"] = config.Prod
+		r.SetLabels(labels)
 	}
-	return items
 }
 
 var Resources = Overlay[ProdOverlay]{

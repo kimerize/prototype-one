@@ -3,15 +3,15 @@ package lib
 import (
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type Transformer interface {
-	Transform(items []unstructured.Unstructured) []unstructured.Unstructured
+	Transform(items resmap.ResMap)
 }
 
 type Generator interface {
-	Generate() []unstructured.Unstructured
+	Generate() resmap.ResMap
 }
 
 type Overlay[T Transformer] struct {
@@ -20,13 +20,11 @@ type Overlay[T Transformer] struct {
 
 type dummyTransformer struct{}
 
-func (dummyTransformer) Transform(items []unstructured.Unstructured) []unstructured.Unstructured {
-	return items
-}
+func (dummyTransformer) Transform(items resmap.ResMap) {}
 
 var _ Generator = Overlay[dummyTransformer]{}
 
-func (t Overlay[T]) Generate() []unstructured.Unstructured {
+func (t Overlay[T]) Generate() resmap.ResMap {
 	v := reflect.ValueOf(t.Config)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -35,14 +33,15 @@ func (t Overlay[T]) Generate() []unstructured.Unstructured {
 		return nil
 	}
 
-	items := []unstructured.Unstructured{}
+	result := resmap.New()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if g, ok := field.Interface().(Generator); ok {
-			items = append(items, g.Generate()...)
+			result.AbsorbAll(g.Generate())
 		}
 	}
-	return t.Config.Transform(items)
+	t.Config.Transform(result)
+	return result
 }
 
 func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
@@ -50,8 +49,8 @@ func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
 	return t
 }
 
-// func Generate[T any](fn func(T) []unstructured.Unstructured) Transform[T] {
-// 	return func(items []unstructured.Unstructured, config T) []unstructured.Unstructured {
+// func Generate[T any](fn func(T) resmap.ResMap) Transform[T] {
+// 	return func(items resmap.ResMap, config T) resmap.ResMap {
 // 		return append(items, fn(config)...)
 // 	}
 // }
@@ -60,8 +59,8 @@ func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
 
 // var _ Generator = GeneratorList{}
 
-// func (l GeneratorList) Generate() []unstructured.Unstructured {
-// 	items := []unstructured.Unstructured{}
+// func (l GeneratorList) Generate() resmap.ResMap {
+// 	items := resmap.ResMap{}
 // 	for _, g := range l {
 // 		items = append(items, g.Generate()...)
 // 	}
