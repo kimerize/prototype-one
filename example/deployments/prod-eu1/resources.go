@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "github.com/kimerize/kimerize/example/generator"
 	. "github.com/kimerize/kimerize/example/overlays/teams/my-team"
 	. "github.com/kimerize/kimerize/lib"
 	"sigs.k8s.io/kustomize/api/resmap"
@@ -22,11 +23,13 @@ func (config ProdOverlay) Transform(rm resmap.ResMap) {
 	}
 }
 
-var Resources = Overlay[ProdOverlay]{
-	Config: ProdOverlay{
-		Prod: "prod",
-		MyTeam: DefaultMyTeam.WithOverrides(func(rg *Overlay[MyTeamOverlay]) {
-			rg.Config.CertManager.Version = "1.6.2"
-		}),
-	},
+var Resources = Overlay[MyCorpOverlay]{
+	Config: NewMyCorpOverlay(Overlay[ProdOverlay]{
+		Config: ProdOverlay{
+			Prod: "prod",
+			MyTeam: DefaultMyTeam.WithOverrides(func(rg *Overlay[MyTeamOverlay]) {
+				rg.Config.CertManager.Version = "1.6.2"
+			}),
+		},
+	}),
 }
