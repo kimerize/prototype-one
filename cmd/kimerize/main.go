@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/kimerize/kimerize/lib"
+	"github.com/ztrue/tracerr"
 	"sigs.k8s.io/controller-tools/pkg/loader"
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -112,14 +113,6 @@ func getGenerator(pl *plugin.Plugin) (lib.Generator, error) {
 	return generator, nil
 }
 
-func generateNodes(generator lib.Generator) ([]*yaml.RNode, error) {
-	var nodes []*yaml.RNode
-	for _, r := range generator.Generate().Resources() {
-		nodes = append(nodes, r.RNode.Copy())
-	}
-	return nodes, nil
-}
-
 func processPackage(pkg *loader.Package, rootDir string) error {
 	tmpDir, err := os.MkdirTemp("", "plugin-*")
 	if err != nil {
@@ -145,10 +138,21 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 		return err
 	}
 
-	nodes, err := generateNodes(generator)
-	if err != nil {
-		return err
+	resources := generator.Generate()
+	if errs := resources.Errors(); errs != nil {
+		for _, e := range errs {
+			// isolate only stack traces that have path in the module of the package
+			tracerr.PrintSourceColor(tracerr.CustomError(e, e.StackTrace()[:1]))
+		}
 	}
+
+	var nodes []*yaml.RNode
+	resources.ForEach(func(r *lib.Resource) error {
+		lib.ModifyAs(r, func(r *yaml.RNode) {
+			nodes = append(nodes, r.Copy())
+		})
+		return nil
+	})
 
 	relPath, _ := filepath.Rel(rootDir, pkg.Dir)
 	outputPath := filepath.Join(rootDir, "zz_generated", relPath)

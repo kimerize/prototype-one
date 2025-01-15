@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	. "github.com/kimerize/kimerize/lib"
-	. "github.com/kimerize/kimerize/lib/kustomize"
-	"sigs.k8s.io/kustomize/api/resmap"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
@@ -16,7 +14,7 @@ type CertManagerGenerator struct {
 
 var _ Generator = CertManagerGenerator{}
 
-func (c CertManagerGenerator) Generate() resmap.ResMap {
+func (c CertManagerGenerator) Generate() ResourceList {
 	return KustomizeBuild(types.Kustomization{
 		Resources: []string{
 			fmt.Sprintf("https://github.com/cert-manager/cert-manager/releases/download/v%s/cert-manager.yaml", c.Version),

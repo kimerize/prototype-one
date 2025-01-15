@@ -1,10 +1,9 @@
-package kustomize
+package lib
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/kustomize/api/krusty"
-	"sigs.k8s.io/kustomize/api/resmap"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -15,7 +14,7 @@ func init() {
 	corev1.AddToScheme(scheme)
 }
 
-func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) resmap.ResMap {
+func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) ResourceList {
 	options := krusty.MakeDefaultOptions()
 	options.PluginConfig.HelmConfig.Enabled = true
 	options.PluginConfig.HelmConfig.Command = "helm"
@@ -30,10 +29,14 @@ func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) resmap
 		// TODO:
 	}
 
-	m, err := k.Run(fs, ".")
+	rm, err := k.Run(fs, ".")
 	if err != nil {
 		// TODO:
 		// return false, err
 	}
-	return m
+	result := ResourceList{}
+	for _, r := range rm.Resources() {
+		result.Append(ResourceFrom(r.RNode))
+	}
+	return result
 }

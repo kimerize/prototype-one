@@ -2,46 +2,46 @@ package lib
 
 import (
 	"reflect"
-
-	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type Transformer interface {
-	Transform(items resmap.ResMap)
+	Transform(items *ResourceList)
 }
 
 type Generator interface {
-	Generate() resmap.ResMap
+	Generate() ResourceList
 }
 
 type Overlay[T Transformer] struct {
 	Config T
 }
 
-type dummyTransformer struct{}
+type dummyTransformer struct {
+	kind string
+}
 
-func (dummyTransformer) Transform(items resmap.ResMap) {}
+func (dummyTransformer) Transform(items *ResourceList) {}
 
 var _ Generator = Overlay[dummyTransformer]{}
 
-func (t Overlay[T]) Generate() resmap.ResMap {
+func (t Overlay[T]) Generate() ResourceList {
 	v := reflect.ValueOf(t.Config)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
-		return nil
+		panic("Overlay config must be a struct")
 	}
 
-	result := resmap.New()
+	result := NewResourceList()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if g, ok := field.Interface().(Generator); ok {
-			result.AbsorbAll(g.Generate())
+			result.Absorb(g.Generate())
 		}
 	}
 	t.Config.Transform(result)
-	return result
+	return *result
 }
 
 func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
@@ -49,8 +49,8 @@ func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
 	return t
 }
 
-// func Generate[T any](fn func(T) resmap.ResMap) Transform[T] {
-// 	return func(items resmap.ResMap, config T) resmap.ResMap {
+// func Generate[T any](fn func(T) ResourceList) Transform[T] {
+// 	return func(items ResourceList, config T) ResourceList {
 // 		return append(items, fn(config)...)
 // 	}
 // }
@@ -59,8 +59,8 @@ func (t Overlay[T]) WithOverrides(override func(*Overlay[T])) Overlay[T] {
 
 // var _ Generator = GeneratorList{}
 
-// func (l GeneratorList) Generate() resmap.ResMap {
-// 	items := resmap.ResMap{}
+// func (l GeneratorList) Generate() ResourceList {
+// 	items := ResourceList{}
 // 	for _, g := range l {
 // 		items = append(items, g.Generate()...)
 // 	}

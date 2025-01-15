@@ -1,4 +1,4 @@
-package kustomize
+package lib
 
 import (
 	"testing"
@@ -32,7 +32,7 @@ import (
 // }
 
 func TestModifyAs(t *testing.T) {
-	rm := KustomizeBuild(kusttypes.Kustomization{
+	rl := KustomizeBuild(kusttypes.Kustomization{
 		ConfigMapGenerator: []kusttypes.ConfigMapArgs{{
 			GeneratorArgs: kusttypes.GeneratorArgs{
 				Name:          "foo",
@@ -42,10 +42,10 @@ func TestModifyAs(t *testing.T) {
 		}},
 	}, filesys.MakeFsInMemory())
 
-	ModifyAs(&rm.Resources()[0].RNode, func(cm *corev1.ConfigMap) {
+	ModifyAs(rl.resources[0], func(cm *corev1.ConfigMap) {
 		cm.Data["foo1"] = "bar1"
 	})
-	newField, err := rm.Resources()[0].GetFieldValue("data.foo1")
+	newField, err := rl.resources[0].rnode.GetFieldValue("data.foo1")
 	assert.NoError(t, err)
 	assert.Equal(t, "bar1", newField)
 }
@@ -77,19 +77,19 @@ spec:
 	}, fs)
 
 	assert := func(name string, newField string) {
-		assert.Equal(t, 2, rm.Size())
-		for _, r := range rm.Resources() {
-			if r.GetKind() == "Pod" {
+		assert.Equal(t, 2, len(rm.resources))
+		for _, r := range rm.resources {
+			if r.rnode.GetKind() == "Pod" {
 				value, err := yaml.PathGetter{
 					Path: []string{"spec", "containers", "[name=test]", "envFrom", "0", "configMapRef", "name"},
-				}.Filter(&r.RNode)
+				}.Filter(&r.rnode)
 				assert.NoError(t, err)
 				assert.Equal(t, name, value.Document().Value)
-			} else if r.GetKind() == "ConfigMap" {
-				assert.Equal(t, name, r.GetName())
+			} else if r.rnode.GetKind() == "ConfigMap" {
+				assert.Equal(t, name, r.rnode.GetName())
 				value, _ := yaml.PathGetter{
 					Path: []string{"data", "foo1"},
-				}.Filter(&r.RNode)
+				}.Filter(&r.rnode)
 				if value == nil {
 					value = yaml.NewScalarRNode("")
 				}

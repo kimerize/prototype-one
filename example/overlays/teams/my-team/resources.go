@@ -1,9 +1,10 @@
 package myteam
 
 import (
+	"fmt"
+
 	. "github.com/kimerize/kimerize/example/base/cert-manager"
 	. "github.com/kimerize/kimerize/lib"
-	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type MyTeamOverlay struct {
@@ -11,15 +12,12 @@ type MyTeamOverlay struct {
 	CertManager CertManagerGenerator
 }
 
-func (config MyTeamOverlay) Transform(rm resmap.ResMap) {
-	for _, r := range rm.Resources() {
-		labels := r.GetLabels()
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		labels["team"] = "my-team"
-		r.SetLabels(labels)
-	}
+func (config MyTeamOverlay) Transform(resources *ResourceList) {
+	resources.ErrorAggregator.Append(NewError(fmt.Errorf("MyTeamOverlay.Transform not implemented")))
+	resources.ForEach(func(r *Resource) error {
+		r.SetLabel("team", config.Team)
+		return nil
+	})
 }
 
 var DefaultMyTeam = Overlay[MyTeamOverlay]{
