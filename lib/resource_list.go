@@ -8,18 +8,6 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-type Error = tracerr.Error
-
-var NewError = tracerr.Wrap
-
-type ErrorAggregator struct {
-	errors []Error
-}
-
-func (e *ErrorAggregator) Append(err ...Error) {
-	e.errors = append(e.errors, err...)
-}
-
 type Resource struct {
 	rnode yaml.RNode
 }
@@ -66,7 +54,11 @@ func (r *Resource) SetLabel(key, value string) {
 
 type ResourceList struct {
 	resources []*Resource
-	ErrorAggregator
+	errors    []tracerr.Error
+}
+
+func (rl *ResourceList) Error(err error) {
+	rl.errors = append(rl.errors, tracerr.Wrap(err))
 }
 
 func (rl *ResourceList) ForEach(f func(*Resource) error) error {
@@ -108,7 +100,7 @@ func (rl *ResourceList) Append(r Resource) error {
 }
 
 func (rl *ResourceList) Absorb(other ResourceList) error {
-	rl.ErrorAggregator.Append(other.ErrorAggregator.errors...)
+	rl.errors = append(rl.errors, other.errors...)
 	for _, r := range other.resources {
 		if err := rl.Append(*r); err != nil {
 			return err
@@ -121,7 +113,7 @@ func (rl *ResourceList) Absorb(other ResourceList) error {
 // 	return rl.resources
 // }
 
-func (rl *ResourceList) Errors() []Error {
+func (rl *ResourceList) Errors() []tracerr.Error {
 	return rl.errors
 }
 

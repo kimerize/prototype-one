@@ -13,11 +13,16 @@ type MyTeamOverlay struct {
 }
 
 func (config MyTeamOverlay) Transform(resources *ResourceList) {
-	resources.ErrorAggregator.Append(NewError(fmt.Errorf("MyTeamOverlay.Transform not implemented")))
+	addError(resources)
 	resources.ForEach(func(r *Resource) error {
 		r.SetLabel("team", config.Team)
 		return nil
 	})
+}
+
+func addError(resources *ResourceList) {
+	fmt.Errorf("MyTeamOverlay.Transform not implemented")
+	resources.Error(fmt.Errorf("MyTeamOverlay.Transform not implemented"))
 }
 
 var DefaultMyTeam = Overlay[MyTeamOverlay]{

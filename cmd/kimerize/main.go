@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"plugin"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/kimerize/kimerize/lib"
@@ -113,6 +114,18 @@ func getGenerator(pl *plugin.Plugin) (lib.Generator, error) {
 	return generator, nil
 }
 
+func printStackTrace(err tracerr.Error) {
+	var frames []tracerr.Frame
+	for _, f := range err.StackTrace() {
+		// TODO: this is a hack to isolate only stack traces that have path in the module of the package
+		// isolate only stack traces that have path in the module of the package
+		if strings.Contains(f.Path, "example") {
+			frames = append(frames, f)
+		}
+	}
+	tracerr.PrintSourceColor(tracerr.CustomError(err, frames))
+}
+
 func processPackage(pkg *loader.Package, rootDir string) error {
 	tmpDir, err := os.MkdirTemp("", "plugin-*")
 	if err != nil {
@@ -141,9 +154,9 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 	resources := generator.Generate()
 	if errs := resources.Errors(); errs != nil {
 		for _, e := range errs {
-			// isolate only stack traces that have path in the module of the package
-			tracerr.PrintSourceColor(tracerr.CustomError(e, e.StackTrace()[:1]))
+			printStackTrace(e)
 		}
+		return fmt.Errorf("error generating package")
 	}
 
 	var nodes []*yaml.RNode
