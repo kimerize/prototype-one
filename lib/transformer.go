@@ -4,8 +4,21 @@ import (
 	"reflect"
 )
 
+type Defaulter interface {
+	SetDefaults()
+}
+
+type OverlayInterface[T Transformer] interface {
+	Generator
+}
+
 type Transformer interface {
 	Transform(items *ResourceList)
+}
+
+type OverlayConfig interface {
+	Transformer
+	Defaulter
 }
 
 type Generator interface {
@@ -13,19 +26,42 @@ type Generator interface {
 }
 
 type Overlay[T Transformer] struct {
-	Config T
+	config T
 }
 
-type dummyTransformer struct {
+func NewOverlay[T Transformer, P interface {
+	*T
+	Defaulter
+}]() *Overlay[T] {
+	var t T
+	P.SetDefaults(&t)
+	overlay := Overlay[T]{
+		config: t,
+	}
+	return &overlay
+}
+
+type dummyOverlayConfig struct {
 	kind string
 }
 
-func (dummyTransformer) Transform(items *ResourceList) {}
+func (dummyOverlayConfig) Transform(items *ResourceList) {}
 
-var _ Generator = Overlay[dummyTransformer]{}
+func (d *dummyOverlayConfig) SetDefaults() {
+	d.kind = "dummy"
+}
+
+var _ OverlayConfig = &dummyOverlayConfig{}
+
+var _ Generator = NewOverlay[dummyOverlayConfig]()
+
+func (t *Overlay[T]) Override(f func(*T)) Overlay[T] {
+	f(&t.config)
+	return *t
+}
 
 func (t Overlay[T]) Generate() ResourceList {
-	v := reflect.ValueOf(t.Config)
+	v := reflect.ValueOf(t.config)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
@@ -40,7 +76,7 @@ func (t Overlay[T]) Generate() ResourceList {
 			result.Absorb(g.Generate())
 		}
 	}
-	t.Config.Transform(result)
+	t.config.Transform(result)
 	return *result
 }
 

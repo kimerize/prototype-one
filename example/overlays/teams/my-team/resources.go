@@ -9,8 +9,17 @@ import (
 
 type MyTeamOverlay struct {
 	Team        string
-	CertManager CertManagerGenerator
+	CertManager Overlay[CertManager]
 }
+
+// SetDefaults implements lib.Transformer.
+func (config *MyTeamOverlay) SetDefaults() {
+	// TODO: do this automatically
+	config.CertManager = *NewOverlay[CertManager]()
+	config.Team = "my-team"
+}
+
+var _ = NewOverlay[CertManager]()
 
 func (config MyTeamOverlay) Transform(resources *ResourceList) {
 	addError(resources)
@@ -21,13 +30,13 @@ func (config MyTeamOverlay) Transform(resources *ResourceList) {
 }
 
 func addError(resources *ResourceList) {
-	fmt.Errorf("MyTeamOverlay.Transform not implemented")
+	// TODO: remove, for testing purposes only
 	resources.Error(fmt.Errorf("MyTeamOverlay.Transform not implemented"))
 }
 
-var DefaultMyTeam = Overlay[MyTeamOverlay]{
-	Config: MyTeamOverlay{
-		Team:        "my-team",
-		CertManager: DefaultCertManager,
-	},
-}
+// var DefaultMyTeam = Overlay[MyTeamOverlay]{
+// 	Config: MyTeamOverlay{
+// 		Team:        "my-team",
+// 		CertManager: DefaultCertManager,
+// 	},
+// }

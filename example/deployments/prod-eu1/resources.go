@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/kimerize/kimerize/example/generator"
+	. "github.com/kimerize/kimerize/example/base/cert-manager"
 	. "github.com/kimerize/kimerize/example/overlays/teams/my-team"
 	. "github.com/kimerize/kimerize/lib"
 )
@@ -18,17 +18,15 @@ func (config ProdOverlay) Transform(rl *ResourceList) {
 	})
 }
 
-var MyTeamWithOverrides = DefaultMyTeam.WithOverrides(func(rg *Overlay[MyTeamOverlay]) {
-	rg.Config.CertManager.Version = "1.6.2"
-})
-
-var Resources = Overlay[MyCorpOverlay]{
-	Config: NewMyCorpOverlay(Overlay[ProdOverlay]{
-		Config: ProdOverlay{
-			Prod:   "prod",
-			MyTeam: MyTeamWithOverrides,
-		},
-	}),
-
-	// prodOverlay.Myeam.CertManager
+func (config *ProdOverlay) SetDefaults() {
+	config.Prod = "prod"
 }
+
+var Resources = NewOverlay[ProdOverlay]().
+	Override(func(po *ProdOverlay) {
+		po.MyTeam.Override(func(mto *MyTeamOverlay) {
+			mto.CertManager.Override(func(cm *CertManager) {
+				cm.Version = "1.5.0"
+			})
+		})
+	})
