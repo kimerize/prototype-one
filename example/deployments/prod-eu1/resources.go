@@ -11,7 +11,7 @@ type ProdOverlay struct {
 	MyTeam Overlay[MyTeamOverlay]
 }
 
-func (config ProdOverlay) Transform(rl *ResourceList) {
+func (config *ProdOverlay) Transform(rl *ResourceList) {
 	rl.ForEach(func(r *Resource) error {
 		r.SetLabel("prod", config.Prod)
 		return nil

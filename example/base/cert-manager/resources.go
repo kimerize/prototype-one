@@ -12,6 +12,8 @@ type CertManager struct {
 	Version string
 }
 
+var _ = NewOverlay[CertManager]()
+
 // SetDefaults implements lib.OverlayConfig.
 func (c *CertManager) SetDefaults() {
 	c.Version = "1.6.2"
@@ -25,5 +27,3 @@ func (c CertManager) Transform(items *ResourceList) {
 		},
 	}, filesys.MakeFsInMemory()))
 }
-
-var _ = NewOverlay[CertManager]()

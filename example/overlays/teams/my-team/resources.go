@@ -14,14 +14,10 @@ type MyTeamOverlay struct {
 
 // SetDefaults implements lib.Transformer.
 func (config *MyTeamOverlay) SetDefaults() {
-	// TODO: do this automatically
-	config.CertManager = *NewOverlay[CertManager]()
 	config.Team = "my-team"
 }
 
-var _ = NewOverlay[CertManager]()
-
-func (config MyTeamOverlay) Transform(resources *ResourceList) {
+func (config *MyTeamOverlay) Transform(resources *ResourceList) {
 	addError(resources)
 	resources.ForEach(func(r *Resource) error {
 		r.SetLabel("team", config.Team)
