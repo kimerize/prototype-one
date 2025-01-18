@@ -19,9 +19,8 @@ func (config *MyTeamOverlay) SetDefaults() {
 
 func (config *MyTeamOverlay) Transform(resources *ResourceList) {
 	// addError(resources)
-	resources.ForEach(func(r *Resource) error {
+	resources.ForEach(func(r *Resource) {
 		r.SetLabel("team", config.Team)
-		return nil
 	})
 }
 

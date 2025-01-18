@@ -21,11 +21,10 @@ func NewMyCorpOverlay(g Generator) MyCorpOverlay {
 
 // Generate implements lib.Generator.
 func (m MyCorpOverlay) Transform(rl *ResourceList) {
-	rl.ForEach(func(r *Resource) error {
+	rl.ForEach(func(r *Resource) {
 		ModifyAs(r, func(r *yaml.RNode) {
 			resolve.ImageTags(context.TODO(), logr.Discard(), nil, r, nil)
 		})
-		return nil
 	})
 }
 

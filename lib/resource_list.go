@@ -61,16 +61,18 @@ func (rl *ResourceList) Error(err error) {
 	rl.errors = append(rl.errors, tracerr.Wrap(err))
 }
 
-func (rl *ResourceList) ForEach(f func(*Resource) error) error {
+func (rl *ResourceList) Fatal(err error) {
+	rl.errors = append(rl.errors, tracerr.Wrap(err))
+	// TODO: interrupt processing
+}
+
+func (rl *ResourceList) ForEach(f func(*Resource)) {
 	for i, r := range rl.resources {
-		if err := f(r); err != nil {
-			return fmt.Errorf("error processing resource %d: %w", i, err)
-		}
+		f(r)
 		if err := checkDuplicates(rl.resources[:i], *r); err != nil {
-			return err
+			rl.Fatal(err)
 		}
 	}
-	return nil
 }
 
 func checkDuplicates(resources []*Resource, r Resource) error {

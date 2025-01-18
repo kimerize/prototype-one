@@ -160,11 +160,10 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 	}
 
 	var nodes []*yaml.RNode
-	resources.ForEach(func(r *lib.Resource) error {
+	resources.ForEach(func(r *lib.Resource) {
 		lib.ModifyAs(r, func(r *yaml.RNode) {
 			nodes = append(nodes, r.Copy())
 		})
-		return nil
 	})
 
 	relPath, _ := filepath.Rel(rootDir, pkg.Dir)
