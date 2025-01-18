@@ -1,14 +1,13 @@
 package main
 
 import (
-	. "github.com/kimerize/kimerize/example/base/cert-manager"
 	. "github.com/kimerize/kimerize/example/overlays/teams/my-team"
 	. "github.com/kimerize/kimerize/lib"
 )
 
 type ProdOverlay struct {
 	Prod   string
-	MyTeam Overlay[MyTeamOverlay]
+	MyTeam MyTeamOverlay
 }
 
 func (config *ProdOverlay) Transform(rl *ResourceList) {
@@ -22,11 +21,6 @@ func (config *ProdOverlay) SetDefaults() {
 	config.Prod = "prod"
 }
 
-var Resources = NewOverlay[ProdOverlay]().
-	Override(func(po *ProdOverlay) {
-		po.MyTeam.Override(func(mto *MyTeamOverlay) {
-			mto.CertManager.Override(func(cm *CertManager) {
-				cm.Version = "1.5.0"
-			})
-		})
-	})
+var Resources = NewOverlay(func(po *ProdOverlay) {
+	po.MyTeam.CertManager.Version = "1.5.0"
+})

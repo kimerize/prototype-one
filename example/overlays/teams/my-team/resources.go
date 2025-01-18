@@ -9,7 +9,7 @@ import (
 
 type MyTeamOverlay struct {
 	Team        string
-	CertManager Overlay[CertManager]
+	CertManager CertManager
 }
 
 // SetDefaults implements lib.Transformer.
@@ -18,7 +18,7 @@ func (config *MyTeamOverlay) SetDefaults() {
 }
 
 func (config *MyTeamOverlay) Transform(resources *ResourceList) {
-	addError(resources)
+	// addError(resources)
 	resources.ForEach(func(r *Resource) error {
 		r.SetLabel("team", config.Team)
 		return nil

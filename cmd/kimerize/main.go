@@ -89,29 +89,29 @@ func processPackages(packages []*loader.Package, rootDir string) error {
 	return nil
 }
 
-func buildPlugin(pkg *loader.Package) (*plugin.Plugin, error) {
-	pluginPath := filepath.Join(pkg.Dir, "plugin.so")
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", pluginPath, pkg.Dir)
-	cmd.Dir = pkg.Dir
+// func buildPlugin(pkg *loader.Package) (*plugin.Plugin, error) {
+// 	pluginPath := filepath.Join(pkg.Dir, "plugin.so")
+// 	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", pluginPath, pkg.Dir)
+// 	cmd.Dir = pkg.Dir
 
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("build error: %v\n%s", err, out)
-	}
+// 	if out, err := cmd.CombinedOutput(); err != nil {
+// 		return nil, fmt.Errorf("build error: %v\n%s", err, out)
+// 	}
 
-	return plugin.Open(pluginPath)
-}
+// 	return plugin.Open(pluginPath)
+// }
 
-func getGenerator(pl *plugin.Plugin) (lib.Generator, error) {
+func getGenerator(pl *plugin.Plugin) (lib.Overlay, error) {
 	symbol, err := pl.Lookup("Resources")
 	if err != nil {
 		return nil, err
 	}
 
-	generator, ok := symbol.(lib.Generator)
+	generator, ok := symbol.(*lib.Overlay)
 	if !ok {
 		return nil, fmt.Errorf("unexpected function signature")
 	}
-	return generator, nil
+	return *generator, nil
 }
 
 func printStackTrace(err tracerr.Error) {
@@ -134,7 +134,7 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 	defer os.RemoveAll(tmpDir)
 
 	pluginPath := filepath.Join(tmpDir, "plugin.so")
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", pluginPath, pkg.Dir)
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-gcflags=all=-N -l", "-o", pluginPath, pkg.Dir)
 	cmd.Dir = pkg.Dir
 
 	if out, err := cmd.CombinedOutput(); err != nil {

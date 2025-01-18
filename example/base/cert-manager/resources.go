@@ -12,7 +12,7 @@ type CertManager struct {
 	Version string
 }
 
-var _ = NewOverlay[CertManager]()
+var _ OverlayConfig = &CertManager{}
 
 // SetDefaults implements lib.OverlayConfig.
 func (c *CertManager) SetDefaults() {
