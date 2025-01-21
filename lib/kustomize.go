@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/kustomize/api/krusty"
@@ -32,6 +34,7 @@ func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) Resour
 	rm, err := k.Run(fs, ".")
 	if err != nil {
 		// TODO:
+		fmt.Println("kustomize Error:", err)
 		// return false, err
 	}
 	result := ResourceList{}

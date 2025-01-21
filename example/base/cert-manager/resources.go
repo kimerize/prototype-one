@@ -12,7 +12,7 @@ type CertManager struct {
 	Version string
 }
 
-var _ OverlayConfig = &CertManager{}
+var _ OverlayTransformer = &CertManager{}
 
 // SetDefaults implements lib.OverlayConfig.
 func (c *CertManager) SetDefaults() {
@@ -25,5 +25,5 @@ func (c CertManager) Transform(items *ResourceList) {
 		Resources: []string{
 			fmt.Sprintf("https://github.com/cert-manager/cert-manager/releases/download/v%s/cert-manager.yaml", c.Version),
 		},
-	}, filesys.MakeFsInMemory()))
+	}, filesys.FileSystemOrOnDisk{}))
 }

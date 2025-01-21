@@ -4,7 +4,9 @@ go 1.23.2
 
 require (
 	github.com/stretchr/testify v1.10.0
-	sigs.k8s.io/kustomize/kyaml v0.18.1
+	k8s.io/api v0.32.0
+	k8s.io/apimachinery v0.32.0
+	sigs.k8s.io/kustomize/kyaml v0.19.0
 )
 
 require (
@@ -100,8 +102,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.32.0 // indirect
-	k8s.io/apimachinery v0.32.0 // indirect
 	k8s.io/client-go v0.32.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7 // indirect
 )
@@ -125,8 +125,8 @@ require (
 	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	sigs.k8s.io/controller-tools v0.17.0
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
-	sigs.k8s.io/kustomize/api v0.18.0
-	sigs.k8s.io/kustomize/kustomize/v5 v5.5.0
+	sigs.k8s.io/kustomize/api v0.19.0
+	sigs.k8s.io/kustomize/kustomize/v5 v5.6.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )

@@ -101,17 +101,17 @@ func processPackages(packages []*loader.Package, rootDir string) error {
 // 	return plugin.Open(pluginPath)
 // }
 
-func getGenerator(pl *plugin.Plugin) (lib.Overlay, error) {
+func getResources(pl *plugin.Plugin) (*lib.ResourceList, error) {
 	symbol, err := pl.Lookup("Resources")
 	if err != nil {
 		return nil, err
 	}
 
-	generator, ok := symbol.(*lib.Overlay)
+	resources, ok := symbol.(*lib.ResourceList)
 	if !ok {
-		return nil, fmt.Errorf("unexpected function signature")
+		return nil, fmt.Errorf("unexpected symbol signature")
 	}
-	return *generator, nil
+	return resources, nil
 }
 
 func printStackTrace(err tracerr.Error) {
@@ -146,12 +146,11 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 		return err
 	}
 
-	generator, err := getGenerator(pl)
+	resources, err := getResources(pl)
 	if err != nil {
 		return err
 	}
 
-	resources := generator.Generate()
 	if errs := resources.Errors(); errs != nil {
 		for _, e := range errs {
 			printStackTrace(e)
