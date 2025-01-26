@@ -1,15 +1,16 @@
 package lib
 
 import (
+	"context"
 	"reflect"
+
+	"github.com/go-logr/logr"
+	"github.com/google/k8s-digester/pkg/resolve"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-type Transformer interface {
-	Transform(items *ResourceList)
-}
-
 type Overlay interface {
-	Transformer
+	Transform(items *ResourceList)
 	SetDefaults()
 }
 
@@ -39,20 +40,80 @@ func setDefaults(o Overlay) {
 	o.SetDefaults()
 }
 
-func BuildOverlay[T any, P interface {
+func BuildOverlayWithOverrides[T any, P interface {
 	*T
 	Overlay
-}](override ...func(*T)) ResourceList {
+}](override func(*T)) ResourceList {
 	t := *new(T)
 	var p P = &t
 	setDefaults(p)
-	for _, o := range override {
-		o(&t)
+	if override != nil {
+		override(&t)
 	}
 	overlay := overlay[T, P]{
 		config: p,
 	}
 	return overlay.Generate()
+}
+
+func BuildOverlayWithoutOverrides[T any, P interface {
+	*T
+	Overlay
+}]() ResourceList {
+	return BuildOverlayWithOverrides[T, P](nil)
+}
+
+func Aggregate(resources ...ResourceList) ResourceList {
+	result := NewResourceList()
+	for _, r := range resources {
+		result.Absorb(r)
+	}
+	return *result
+}
+
+type Transformer func(*ResourceList)
+
+func Transform(resources ResourceList, transformers ...Transformer) ResourceList {
+	for _, t := range transformers {
+		t(&resources)
+	}
+	return resources
+}
+
+type buildOverlayOverrides[T any, P interface {
+	*T
+	Overlay
+}] struct {
+	override func(*T)
+}
+
+func WithOverrides[T any, P interface {
+	*T
+	Overlay
+}](override func(*T)) buildOverlayOverrides[T, P] {
+	return buildOverlayOverrides[T, P]{
+		override: override,
+	}
+}
+
+func WithoutOverrides[T any, P interface {
+	*T
+	Overlay
+}]() buildOverlayOverrides[T, P] {
+	return buildOverlayOverrides[T, P]{}
+}
+
+type transform struct {
+	transform func(*ResourceList)
+}
+
+type Tran interface {
+}
+
+func WithTransform(f func(*ResourceList)) transform {
+	return transform{
+		transform: f,
+	}
 }
 
 type dummyOverlayConfig struct {
@@ -90,4 +151,12 @@ func generate(o Overlay) ResourceList {
 	}
 	o.Transform(result)
 	return *result
+}
+
+func DigestImages(rl *ResourceList) {
+	rl.ForEach(func(r *Resource) {
+		ModifyAs(r, func(r *yaml.RNode) {
+			resolve.ImageTags(context.TODO(), logr.Discard(), nil, r, nil)
+		})
+	})
 }
