@@ -114,7 +114,6 @@ func (n *valueSetterWalker) VisitScalar(sources walk.Sources, _ *openapi.Resourc
 
 var _ walk.Visitor = &valueSetterWalker{}
 
-// TODO: add namespace
 func ModifyHashSuffixedResource[T any](rl ResourceList, name types.NamespacedName, fn func(*T)) {
 	kind := reflect.TypeOf((*T)(nil)).Elem().Name()
 	var foundName string
