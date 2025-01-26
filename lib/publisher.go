@@ -1,8 +1,11 @@
 package lib
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"golang.org/x/tools/go/packages"
 	"sigs.k8s.io/kustomize/api/resmap"
@@ -30,6 +33,10 @@ type PackagePublisher interface {
 	Publish(Package) error
 }
 
+const (
+	dotKimerizeFile = ".kimerize"
+)
+
 type kustomizePublisher struct {
 }
 
@@ -48,7 +55,26 @@ func (k kustomizePublisher) Publish(p Package) error {
 		})
 	})
 	outputDir := p.localPathOutput()
+
+	// Check if directory is empty or contains .kimerize file
+	entries, err := os.ReadDir(outputDir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if len(entries) != 0 && !slices.ContainsFunc(entries, func(e os.DirEntry) bool {
+		return e.Name() == dotKimerizeFile
+	}) {
+		return fmt.Errorf("directory %s is not empty and not a previously published dir", outputDir)
+	}
+
+	if err := os.RemoveAll(outputDir); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
+		return err
+	}
+	// Create a .kimerize file to mark this as a generated package
+	if err := os.WriteFile(filepath.Join(outputDir, dotKimerizeFile), []byte{}, 0600); err != nil {
 		return err
 	}
 	writer := build.MakeWriter(filesys.FileSystemOrOnDisk{})
