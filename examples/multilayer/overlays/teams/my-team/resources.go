@@ -1,7 +1,7 @@
 package myteam
 
 import (
-	certmanager "github.com/kimerize/kimerize/example/base/cert-manager"
+	certmanager "github.com/kimerize/kimerize/examples/multilayer/base/cert-manager"
 	. "github.com/kimerize/kimerize/lib"
 )
 

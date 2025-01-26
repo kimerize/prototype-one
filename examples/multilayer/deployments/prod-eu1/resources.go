@@ -1,8 +1,8 @@
 package main
 
 import (
-	myteam "github.com/kimerize/kimerize/example/overlays/teams/my-team"
-	"github.com/kimerize/kimerize/example/utils"
+	myteam "github.com/kimerize/kimerize/examples/multilayer/overlays/teams/my-team"
+	"github.com/kimerize/kimerize/examples/multilayer/utils"
 	. "github.com/kimerize/kimerize/lib"
 )
 
