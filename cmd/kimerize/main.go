@@ -55,7 +55,9 @@ func main() {
 		log.Fatalf("Error loading roots: %v\n", err)
 	}
 
-	processPackages(packages)
+	if err := processPackages(packages); err != nil {
+		log.Fatalf("Error processing packages: %v\n", err)
+	}
 }
 
 func processPackages(packages []*packages.Package) error {

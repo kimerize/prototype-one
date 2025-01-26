@@ -32,15 +32,17 @@ import (
 // }
 
 func TestModifyAs(t *testing.T) {
-	rl := KustomizeBuild(kusttypes.Kustomization{
-		ConfigMapGenerator: []kusttypes.ConfigMapArgs{{
-			GeneratorArgs: kusttypes.GeneratorArgs{
-				Name:          "foo",
-				KvPairSources: kusttypes.KvPairSources{LiteralSources: []string{"foo=bar"}},
-				Options:       &kusttypes.GeneratorOptions{DisableNameSuffixHash: true},
-			},
-		}},
-	}, filesys.MakeFsInMemory())
+	rl := KustomizeBuild(".", func(fs filesys.FileSystem) error {
+		return WriteKustomization(fs, kusttypes.Kustomization{
+			ConfigMapGenerator: []kusttypes.ConfigMapArgs{{
+				GeneratorArgs: kusttypes.GeneratorArgs{
+					Name:          "foo",
+					KvPairSources: kusttypes.KvPairSources{LiteralSources: []string{"foo=bar"}},
+					Options:       &kusttypes.GeneratorOptions{DisableNameSuffixHash: true},
+				},
+			}},
+		})
+	})
 
 	ModifyAs(rl.resources[0], func(cm *corev1.ConfigMap) {
 		cm.Data["foo1"] = "bar1"
@@ -66,15 +68,17 @@ spec:
             name: foo
   `))
 	assert.NoError(t, err)
-	rm := KustomizeBuild(kusttypes.Kustomization{
-		Resources: []string{"pod.yaml"},
-		ConfigMapGenerator: []kusttypes.ConfigMapArgs{{
-			GeneratorArgs: kusttypes.GeneratorArgs{
-				Name:          "foo",
-				KvPairSources: kusttypes.KvPairSources{LiteralSources: []string{"foo=bar"}},
-			},
-		}},
-	}, fs)
+	rm := KustomizeBuild(".", func(fs filesys.FileSystem) error {
+		return WriteKustomization(fs, kusttypes.Kustomization{
+			Resources: []string{"pod.yaml"},
+			ConfigMapGenerator: []kusttypes.ConfigMapArgs{{
+				GeneratorArgs: kusttypes.GeneratorArgs{
+					Name:          "foo",
+					KvPairSources: kusttypes.KvPairSources{LiteralSources: []string{"foo=bar"}},
+				},
+			}},
+		})
+	})
 
 	assert := func(name string, newField string) {
 		assert.Equal(t, 2, len(rm.resources))
