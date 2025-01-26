@@ -1,14 +1,21 @@
 package main
 
 import (
-	. "github.com/kimerize/kimerize/example/overlays/teams/my-team"
+	"context"
+
+	"github.com/go-logr/logr"
+	"github.com/google/k8s-digester/pkg/resolve"
+	myteam "github.com/kimerize/kimerize/example/overlays/teams/my-team"
 	. "github.com/kimerize/kimerize/lib"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
 type ProdOverlay struct {
 	Prod   string
-	MyTeam MyTeamOverlay
+	MyTeam myteam.MyTeamOverlay
 }
+
+var _ Overlay = &ProdOverlay{}
 
 func (config *ProdOverlay) Transform(rl *ResourceList) {
 	rl.ForEach(func(r *Resource) {
@@ -25,7 +32,9 @@ var Resources ResourceList = func() ResourceList {
 		po.MyTeam.CertManager.Version = "1.5.0"
 	})
 	rl.ForEach(func(r *Resource) {
-		r.SetLabel("cluster", "my-cluster")
+		ModifyAs(r, func(r *yaml.RNode) {
+			resolve.ImageTags(context.TODO(), logr.Discard(), nil, r, nil)
+		})
 	})
 	return rl
 }()

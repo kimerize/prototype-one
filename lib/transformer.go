@@ -8,19 +8,19 @@ type Transformer interface {
 	Transform(items *ResourceList)
 }
 
-type OverlayTransformer interface {
+type Overlay interface {
 	Transformer
 	SetDefaults()
 }
 
 type overlay[T any, P interface {
 	*T
-	OverlayTransformer
+	Overlay
 }] struct {
 	config P
 }
 
-func setDefaults(o OverlayTransformer) {
+func setDefaults(o Overlay) {
 	v := reflect.ValueOf(o)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -32,7 +32,7 @@ func setDefaults(o OverlayTransformer) {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		v := field.Addr().Interface()
-		if g, ok := v.(OverlayTransformer); ok {
+		if g, ok := v.(Overlay); ok {
 			setDefaults(g)
 		}
 	}
@@ -41,7 +41,7 @@ func setDefaults(o OverlayTransformer) {
 
 func BuildOverlay[T any, P interface {
 	*T
-	OverlayTransformer
+	Overlay
 }](override ...func(*T)) ResourceList {
 	t := *new(T)
 	var p P = &t
@@ -65,13 +65,13 @@ func (d *dummyOverlayConfig) SetDefaults() {
 	d.Kind = "dummy"
 }
 
-var _ OverlayTransformer = &dummyOverlayConfig{}
+var _ Overlay = &dummyOverlayConfig{}
 
 func (t overlay[T, P]) Generate() ResourceList {
 	return generate(t.config)
 }
 
-func generate(o OverlayTransformer) ResourceList {
+func generate(o Overlay) ResourceList {
 	v := reflect.ValueOf(o)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -84,7 +84,7 @@ func generate(o OverlayTransformer) ResourceList {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		v := field.Addr().Interface()
-		if g, ok := v.(OverlayTransformer); ok {
+		if g, ok := v.(Overlay); ok {
 			result.Absorb(generate(g))
 		}
 	}
