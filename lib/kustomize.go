@@ -1,8 +1,6 @@
 package lib
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/kustomize/api/krusty"
@@ -16,7 +14,7 @@ func init() {
 	corev1.AddToScheme(scheme)
 }
 
-func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) ResourceList {
+func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) (result ResourceList) {
 	options := krusty.MakeDefaultOptions()
 	options.PluginConfig.HelmConfig.Enabled = true
 	options.PluginConfig.HelmConfig.Command = "helm"
@@ -24,22 +22,22 @@ func KustomizeBuild(kustomize types.Kustomization, fs filesys.FileSystem) Resour
 
 	kBytes, err := yaml.Marshal(kustomize)
 	if err != nil {
-		// TODO:
+		result.Fatal(err)
+		return
 	}
 	err = fs.WriteFile("kustomization.yaml", kBytes)
 	if err != nil {
-		// TODO:
+		result.Fatal(err)
+		return
 	}
 
 	rm, err := k.Run(fs, ".")
 	if err != nil {
-		// TODO:
-		fmt.Println("kustomize Error:", err)
-		// return false, err
+		result.Fatal(err)
+		return
 	}
-	result := ResourceList{}
 	for _, r := range rm.Resources() {
 		result.Append(ResourceFrom(r.RNode))
 	}
-	return result
+	return
 }
