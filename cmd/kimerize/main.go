@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -54,42 +55,24 @@ func main() {
 		log.Fatalf("Error loading roots: %v\n", err)
 	}
 
-	goModRoot := target
-	for goModRoot != "/" {
-		if _, err := os.Stat(filepath.Join(goModRoot, "go.mod")); err == nil {
-			target = goModRoot
-			break
-		}
-		goModRoot = filepath.Dir(goModRoot)
-	}
-	processPackages(packages, goModRoot)
+	processPackages(packages)
 }
 
-func processPackages(packages []*packages.Package, rootDir string) error {
+func processPackages(packages []*packages.Package) error {
+	var errs []error
+
 	for _, p := range packages {
 		if p.Name != "main" {
 			continue
 		}
-		fmt.Printf("Package: %s --- %s\n", p.PkgPath, p.Dir)
-		if err := processPackage(p, rootDir); err != nil {
-			fmt.Printf("Error processing package %s: %v\n", p.PkgPath, err)
+		log.Printf("Processing package: %s", p.PkgPath)
+		if err := processPackage(p); err != nil {
+			errs = append(errs, fmt.Errorf("error processing package %s: %w", p.PkgPath, err))
 			continue
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
-
-// func buildPlugin(pkg *loader.Package) (*plugin.Plugin, error) {
-// 	pluginPath := filepath.Join(pkg.Dir, "plugin.so")
-// 	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", pluginPath, pkg.Dir)
-// 	cmd.Dir = pkg.Dir
-
-// 	if out, err := cmd.CombinedOutput(); err != nil {
-// 		return nil, fmt.Errorf("build error: %v\n%s", err, out)
-// 	}
-
-// 	return plugin.Open(pluginPath)
-// }
 
 func getPackageResources(pl *plugin.Plugin) (*lib.ResourceList, error) {
 	symbol, err := pl.Lookup("Resources")
@@ -127,7 +110,7 @@ func printStackTrace(p *packages.Package, err tracerr.Error) {
 	tracerr.PrintSourceColor(tracerr.CustomError(err, frames))
 }
 
-func processPackage(pkg *packages.Package, rootDir string) error {
+func processPackage(pkg *packages.Package) error {
 	tmpDir, err := os.MkdirTemp("", "plugin-*")
 	if err != nil {
 		return err
