@@ -117,12 +117,10 @@ func getPackagePublisher(pl *plugin.Plugin) (lib.PackagePublisher, error) {
 	return *publisher, nil
 }
 
-func printStackTrace(err tracerr.Error) {
+func printStackTrace(p *packages.Package, err tracerr.Error) {
 	var frames []tracerr.Frame
 	for _, f := range err.StackTrace() {
-		// TODO: this is a hack to isolate only stack traces that have path in the module of the package
-		// isolate only stack traces that have path in the module of the package
-		if strings.Contains(f.Path, "example") {
+		if strings.Contains(f.Path, p.Module.Dir) {
 			frames = append(frames, f)
 		}
 	}
@@ -156,7 +154,7 @@ func processPackage(pkg *packages.Package, rootDir string) error {
 
 	if errs := resources.Errors(); errs != nil {
 		for _, e := range errs {
-			printStackTrace(e)
+			printStackTrace(pkg, e)
 		}
 		return fmt.Errorf("error generating package")
 	}
