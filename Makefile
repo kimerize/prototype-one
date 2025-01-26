@@ -1,3 +1,3 @@
 .PHONY: example
-demo:
+example:
 	go run -gcflags=all="-N -l" ./cmd/kimerize example

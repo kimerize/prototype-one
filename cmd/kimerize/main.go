@@ -2,26 +2,24 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"plugin"
 	"strings"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/kimerize/kimerize/lib"
 	"github.com/ztrue/tracerr"
-	"sigs.k8s.io/controller-tools/pkg/loader"
-	"sigs.k8s.io/kustomize/kyaml/kio"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
+	"golang.org/x/tools/go/packages"
 )
 
 func main() {
 	target, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("Error getting current working directory: %v\n", err)
-		return
+		log.Fatalf("Error getting current working directory: %v\n", err)
 	}
+	// TODO: use cobra
 	if len(os.Args) > 1 {
 		if filepath.IsAbs(os.Args[1]) {
 			target = os.Args[1]
@@ -29,16 +27,8 @@ func main() {
 			target = filepath.Join(target, os.Args[1])
 		}
 	}
-	fmt.Println("Processing directory:", target)
+	log.Println("Processing directory:", target)
 
-	// Find the git repository root starting from the target directory
-	r, err := git.PlainOpenWithOptions(target, &git.PlainOpenOptions{
-		DetectDotGit: true,
-	})
-	if err != nil {
-		fmt.Printf("Error opening git repository: %v\n", err)
-		return
-	}
 	var goDirs []string
 	err = filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -56,28 +46,28 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("Error walking directory tree: %v\n", err)
-		return
-	}
-	packages, err := loader.LoadRoots(goDirs...)
-	if err != nil {
-		fmt.Printf("Error loading roots: %v\n", err)
-		return
+		log.Fatalf("Error walking directory tree: %v", err)
 	}
 
-	// TODO: find a module root and use that as the root directory
-	wt, err := r.Worktree()
+	packages, err := packages.Load(&packages.Config{Mode: packages.NeedName | packages.NeedFiles | packages.NeedModule, Dir: target}, goDirs...)
 	if err != nil {
-		fmt.Printf("Error getting worktree: %v\n", err)
-		return
+		log.Fatalf("Error loading roots: %v\n", err)
 	}
-	rootDir := wt.Filesystem.Root()
-	processPackages(packages, rootDir)
+
+	goModRoot := target
+	for goModRoot != "/" {
+		if _, err := os.Stat(filepath.Join(goModRoot, "go.mod")); err == nil {
+			target = goModRoot
+			break
+		}
+		goModRoot = filepath.Dir(goModRoot)
+	}
+	processPackages(packages, goModRoot)
 }
 
-func processPackages(packages []*loader.Package, rootDir string) error {
+func processPackages(packages []*packages.Package, rootDir string) error {
 	for _, p := range packages {
-		if p.Package.Name != "main" {
+		if p.Name != "main" {
 			continue
 		}
 		fmt.Printf("Package: %s --- %s\n", p.PkgPath, p.Dir)
@@ -101,7 +91,7 @@ func processPackages(packages []*loader.Package, rootDir string) error {
 // 	return plugin.Open(pluginPath)
 // }
 
-func getResources(pl *plugin.Plugin) (*lib.ResourceList, error) {
+func getPackageResources(pl *plugin.Plugin) (*lib.ResourceList, error) {
 	symbol, err := pl.Lookup("Resources")
 	if err != nil {
 		return nil, err
@@ -112,6 +102,19 @@ func getResources(pl *plugin.Plugin) (*lib.ResourceList, error) {
 		return nil, fmt.Errorf("unexpected symbol signature")
 	}
 	return resources, nil
+}
+
+func getPackagePublisher(pl *plugin.Plugin) (lib.PackagePublisher, error) {
+	symbol, err := pl.Lookup("Publisher")
+	if err != nil {
+		return nil, err
+	}
+
+	publisher, ok := symbol.(*lib.PackagePublisher)
+	if !ok {
+		return nil, fmt.Errorf("unexpected symbol signature")
+	}
+	return *publisher, nil
 }
 
 func printStackTrace(err tracerr.Error) {
@@ -126,7 +129,7 @@ func printStackTrace(err tracerr.Error) {
 	tracerr.PrintSourceColor(tracerr.CustomError(err, frames))
 }
 
-func processPackage(pkg *loader.Package, rootDir string) error {
+func processPackage(pkg *packages.Package, rootDir string) error {
 	tmpDir, err := os.MkdirTemp("", "plugin-*")
 	if err != nil {
 		return err
@@ -146,7 +149,7 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 		return err
 	}
 
-	resources, err := getResources(pl)
+	resources, err := getPackageResources(pl)
 	if err != nil {
 		return err
 	}
@@ -158,21 +161,17 @@ func processPackage(pkg *loader.Package, rootDir string) error {
 		return fmt.Errorf("error generating package")
 	}
 
-	var nodes []*yaml.RNode
-	resources.ForEach(func(r *lib.Resource) {
-		lib.ModifyAs(r, func(r *yaml.RNode) {
-			nodes = append(nodes, r.Copy())
-		})
-	})
-
-	relPath, _ := filepath.Rel(rootDir, pkg.Dir)
-	outputPath := filepath.Join(rootDir, "zz_generated", relPath)
-	if err := os.MkdirAll(outputPath, 0755); err != nil {
+	publisher, err := getPackagePublisher(pl)
+	if err != nil {
 		return err
 	}
 
-	writer := kio.LocalPackageWriter{
-		PackagePath: outputPath,
+	err = publisher.Publish(lib.Package{
+		Resources: *resources,
+		Package:   pkg,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to publish package: %w", err)
 	}
-	return writer.Write(nodes)
+	return nil
 }

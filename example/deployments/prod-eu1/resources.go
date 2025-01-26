@@ -29,3 +29,5 @@ var Resources ResourceList = func() ResourceList {
 	})
 	return rl
 }()
+
+var Publisher PackagePublisher = KustomizePublisher()
